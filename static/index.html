@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <meta charset="utf-8" />
+  <title>fpe hello world demo</title>
+  <script src="https://code.archilogic.com/fpe-sdk/v3.1.x/fpe.js"></script>
+  <script src="index.js" type="text/javascript"></script>
+  <style>
+    #plan {
+      height: 100%;
+    }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+  <body>
+    <div id="plan"></div>
+    <script type="module">
+      const publishableToken = "5c54d29e-2e7e-4074-b6a5-957d1567ff83";
+      const demoSceneId = "2d3409ce-7ac2-4b20-8ad1-5f013786f715";
+      const container = document.getElementById("plan");
+      
+      var apiUrl = window.location.origin;
+     //  var apiUrl = "http://8.15.101.124:8080";
+      var sdk = new nf(apiUrl);
+
+      const points = await sdk.getPoints({
+        field: {
+          property: "class",
+          text: "zone-air-temp-sensor",
+        },
+      });
+
+      const getColor = (temp) => {
+        const dict = {
+          65: [19, 37, 230],
+          66: [19, 110, 230],
+          67: [19, 146, 230],
+          68: [19, 167, 230],
+          69: [19, 202, 230],
+          70: [19, 219, 230],
+          71: [19, 230, 154],
+          72: [100, 230, 19],
+        };
+
+        for (const val of Object.keys(dict)) {
+          if (Number(val) > temp) {
+            return dict[val];
+            break;
+          }
+        }
+        return [230, 223, 19];
+      };
+
+      const startupOptions = {
+        theme: {
+          elements: {
+            roomStamp: {
+              roomStampDisplay: ["name", "customId", "usage", "area"],
+            },
+          },
+        },
+      };
+
+      const floorPlan = new FloorPlanEngine(container, startupOptions);
+      await floorPlan.loadScene(demoSceneId, { publishableToken });
+
+      const spaces = floorPlan.resources.spaces.filter((s) => s.customId);
+
+      spaces.forEach((space) => {
+        const point = points.find((p) => p.attrs.equipRef === space.customId);
+        const temp = point && point.latestValue.valueType.double;
+        if (temp) {
+          space.node.setHighlight({ fill: getColor(temp) });
+        }
+      });
+    </script>
+  </body>
+</html>
+
